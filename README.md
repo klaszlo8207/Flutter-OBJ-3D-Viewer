@@ -2,6 +2,16 @@
 
 An OBJ 3D Viewer and Parser for flutter/dart. Also a simple Rasterizer. 
 
+## Pictures
+
+![alt text](https://raw.githubusercontent.com/klaszlo8207/Flutter-OBJ-3D-Viewer/master/pix/p2.jpg)
+![alt text](https://raw.githubusercontent.com/klaszlo8207/Flutter-OBJ-3D-Viewer/master/pix/p3.jpg)
+![alt text](https://raw.githubusercontent.com/klaszlo8207/Flutter-OBJ-3D-Viewer/master/pix/p4.jpg)
+![alt text](https://raw.githubusercontent.com/klaszlo8207/Flutter-OBJ-3D-Viewer/master/pix/p5.jpg)
+![alt text](https://raw.githubusercontent.com/klaszlo8207/Flutter-OBJ-3D-Viewer/master/pix/p6.jpg)
+![alt text](https://raw.githubusercontent.com/klaszlo8207/Flutter-OBJ-3D-Viewer/master/pix/p7.jpg)
+
+
 ## Usage
 ```
  Object3DViewer(
