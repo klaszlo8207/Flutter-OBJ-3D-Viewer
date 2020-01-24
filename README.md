@@ -2,6 +2,8 @@
 
 An OBJ 3D Viewer and Parser for flutter/dart. Also a simple Rasterizer. 
 
+**NO GPU, NO OPENGL-ES, only CPU side rendering via CustomPainter widget and canvas.**
+
 ## Pictures
 
 ![alt text](https://raw.githubusercontent.com/klaszlo8207/Flutter-OBJ-3D-Viewer/master/pix/p2.jpg)
