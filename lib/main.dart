@@ -16,11 +16,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Flutter 3d obj Parser/Viewer Demo',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: ''),
     );
   }
 }
@@ -38,7 +38,6 @@ class _MyHomePageState extends State<MyHomePage> {
   int _drawModeIndex = 0;
   bool _showWireframe = false;
   int _objIndex = 0;
-  //Color _rndColor = randomColor();
 
   List<DrawMode> _drawModes = [
     DrawMode.SHADED,
@@ -87,41 +86,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Colors.cyan,
   ];
 
-  /*
-  List<String> _objPaths = [
-    "assets/barrels.obj",
-    "assets/chess.obj",
-    "assets/cottage.obj",
-    "assets/e.obj",
-    "assets/lcd.obj",
-  ];
-  List<String> _objTexturePaths = [
-    "assets/barrels.png",
-    "assets/chess.jpg",
-    "assets/cottage.png",
-    "assets/e.png",
-    "assets/lcd.jpg",
-  ];
-  List<Math.Vector3> _angles = [
-    Math.Vector3(80, 10, 0),
-    Math.Vector3(0, 10, 0),
-    Math.Vector3(280, 10, 0),
-    Math.Vector3(0, 10, 0),
-    Math.Vector3(280, 10, 0),
-    Math.Vector3(0, 10, 0),
-  ];
-  List<double> _zooms = [
-    80.0,
-    40.5,
-    41.0,
-    18.0,
-    8.0,
-    2.0,
-  ];
-   */
-
   _nextObj() async {
-    //_rndColor = randomColor();
     _objIndex++;
     if (_objIndex >= _objPaths.length) _objIndex = 0;
     setState(() {});
