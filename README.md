@@ -1,4 +1,4 @@
-# flutter_obj3d_test
+# Flutter obj 3d Viewer/Parser/Rasterizer
 
 An OBJ 3D Viewer and Parser for flutter/dart. Also a simple Rasterizer. 
 
@@ -72,6 +72,11 @@ Also this library can handle only a few Vertices in wireframe/shaded mode (Max v
 **In textured mode the library is in EXPERIMENTAL mode, this is very poor quality yet.** 
 In this mode you can set fewer vertices (like a cube) and do not want to zoom in, because the fill points will be very slow because the rasterizer algorithm at the moment. 
 
+## Author
 
+**Kozári László** in **2020.01.06**
 
+## License
+
+Licensed under the Apache License, Version 2.0 (the "License")
 
