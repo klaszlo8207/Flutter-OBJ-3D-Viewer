@@ -82,8 +82,8 @@ https://github.com/klaszlo8207/Flutter-OBJ-3D-Viewer/blob/master/lib/main.dart
 
 **Please use this library with TRIANGLES in the obj file itself.**
 
-Tha library can handle only some types in the obj file like: vertices, textCoords, normals, faces. 
-Can handle minus face indices. If your model not in Triangle mode then you can convert that via Autodesk 3ds Max or other softwares.
+This library can handle some type in the obj file like: vertices, texture coordinates, normals, faces. 
+It can handle minus face indices. If your model not in triangles, then you can convert that via Autodesk 3ds Max or other softwares.
 
 Also this library can handle only a few Vertices in wireframe/shaded mode (Max vertices in these modes are about 5000 vertices)
 
