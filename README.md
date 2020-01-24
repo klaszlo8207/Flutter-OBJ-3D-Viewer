@@ -53,7 +53,7 @@ An OBJ 3D Viewer and Parser for flutter/dart. Also a simple Rasterizer.
 
 https://github.com/klaszlo8207/Flutter-OBJ-3D-Viewer/blob/master/lib/main.dart
             
-## Usage
+## Properties
   ```
   const Object3DViewer({
     @required this.size,    //size of the widget
