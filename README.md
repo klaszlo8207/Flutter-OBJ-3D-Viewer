@@ -22,31 +22,31 @@ An OBJ 3D Viewer and Parser for flutter/dart. Also a simple Rasterizer.
 ## Usage
 ```
  Object3DViewer(
-              refreshMilliseconds: 10,
-              size: Size(ScreenUtils.width, ScreenUtils.height),
-              animationController: _object3DViewerController,
-              onHorizontalDragUpdate: (d) {
-                if (_objIndex == 4)
-                  _object3DViewerController.rotateY(d); //macska1
-                else
-                  _object3DViewerController.rotateZ(-d);
-              },
-              onVerticalDragUpdate: (d) {
-                _object3DViewerController.rotateX(d);
-              },
-              initialZoom: _zooms[_objIndex],
-              initialAngles: _angles[_objIndex],
-              objPath: _objPaths[_objIndex],
-              texturePath: _objTexturePaths[_objIndex],
-              drawMode: _drawModes[_drawModeIndex],
-              onZoomChangeListener: (zoom) => _zooms[_objIndex] = zoom,
-              onRotationChangeListener: (Math.Vector3 angles) => _angles[_objIndex] = angles,
-              color: _colors[_objIndex],
-              showInfo: true,
-              showWireframe: _showWireframe,
-              wireframeColor: Colors.red,
-              panDistanceToActivate: 40,
-            ),
+   refreshMilliseconds: 10,
+   size: Size(ScreenUtils.width, ScreenUtils.height),
+   animationController: _object3DViewerController,
+   onHorizontalDragUpdate: (d) {
+     if (_objIndex == 4)
+       _object3DViewerController.rotateY(d); //macska1
+     else
+       _object3DViewerController.rotateZ(-d);
+   },
+   onVerticalDragUpdate: (d) {
+     _object3DViewerController.rotateX(d);
+   },
+   initialZoom: _zooms[_objIndex],
+   initialAngles: _angles[_objIndex],
+   objPath: _objPaths[_objIndex],
+   texturePath: _objTexturePaths[_objIndex],
+   drawMode: _drawModes[_drawModeIndex],
+   onZoomChangeListener: (zoom) => _zooms[_objIndex] = zoom,
+   onRotationChangeListener: (Math.Vector3 angles) => _angles[_objIndex] = angles,
+   color: _colors[_objIndex],
+   showInfo: true,
+   showWireframe: _showWireframe,
+   wireframeColor: Colors.red,
+   panDistanceToActivate: 40,
+),
 ```
 
 ## Example
