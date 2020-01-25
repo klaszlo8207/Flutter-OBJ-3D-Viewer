@@ -46,11 +46,11 @@ An OBJ 3D Viewer and Parser for flutter/dart. Also a simple Rasterizer.
    showWireframe: _showWireframe,
    wireframeColor: Colors.red,
    panDistanceToActivate: 40,
-   centerPivot = false,
-   showGrids = true,
-   gridsColor = const Color(0xff4b4b4b),
-   gridsMaxTile = 10,
-   gridsTileSize = 1.0,
+   centerPivot: false,
+   showGrids: true,
+   gridsColorv const Color(0xff4b4b4b),
+   gridsMaxTile: 10,
+   gridsTileSize: 1.0,
 ),
 ```
 
