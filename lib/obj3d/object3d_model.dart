@@ -20,11 +20,12 @@ class Object3DModel {
 
   List<Color> colors;
   Map<String, Color> materials;
-  bool _normalizeVertices = true;
+  bool normalizeVertices = true;
+  bool centerPivot = false;
 
   _toRGB(double r, double g, double b) => Color.fromRGBO((r * 255).toInt(), (g * 255).toInt(), (b * 255).toInt(), 1);
 
-  Object3DModel() {
+  Object3DModel(bool centerPivot) {
     vertices = List<Vector3>();
     normals = List<Vector3>();
     uvs = List<Vector2>();
@@ -35,6 +36,8 @@ class Object3DModel {
 
     colors = List<Color>();
     materials = Map();
+
+    this.centerPivot = centerPivot;
   }
 
   //0 es 1 koze konvertalja a vertexeket, hogy hasonlo nagysaguak legyenek, kitoltsek a zoom-ot
@@ -65,6 +68,44 @@ class Object3DModel {
     }
   }
 
+  _toCenterPivot() {
+    var minX = double.infinity;
+    var maxX = double.negativeInfinity;
+    var minY = double.infinity;
+    var maxY = double.negativeInfinity;
+    var minZ = double.infinity;
+    var maxZ = double.negativeInfinity;
+
+    for (var i = 0; i < vertices.length; i++) {
+      var vertex = vertices[i];
+      if (vertex.x < minX) {
+        minX = vertex.x;
+      }
+      if (vertex.x > maxX) {
+        maxX = vertex.x;
+      }
+      if (vertex.y < minY) {
+        minY = vertex.y;
+      }
+      if (vertex.y > maxY) {
+        maxY = vertex.y;
+      }
+      if (vertex.z < minZ) {
+        minZ = vertex.z;
+      }
+      if (vertex.z > maxZ) {
+        maxZ = vertex.z;
+      }
+    }
+
+    var center = Vector3(minX + (-minX + maxX) * 0.5, minY + (-minY + maxY) * 0.5, minZ + (-minZ + maxZ) * 0.5);
+    var deltaVector = -center;
+
+    for (var i = 0; i < vertices.length; i++) {
+      vertices[i] += deltaVector;
+    }
+  }
+
   _parseObj(String contObj) {
     logger("-----_parseObj START");
 
@@ -77,12 +118,12 @@ class Object3DModel {
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
 
-      // parse vertices
+      // vertices
       if (line.startsWith("v ")) {
         var values = line.substring(2).split(" ");
 
         //normalizalunk minden vertex-et?
-        if (indexOfVertices == 0 && _normalizeVertices) {
+        if (indexOfVertices == 0 && normalizeVertices) {
           //logger("values[0] " + values[0]);
           var v = (double.parse(values[0])).abs();
           multiplicationValue = getMultiplicationValue(v);
@@ -95,7 +136,7 @@ class Object3DModel {
           double.parse(values[2]) * multiplicationValue,
         ));
       }
-      //normals
+      // normals
       else if (line.startsWith("vn ")) {
         var values = line.substring(3).split(" ");
 
@@ -105,7 +146,7 @@ class Object3DModel {
           double.parse(values[2]) * multiplicationValue,
         ));
       }
-      // parse uv
+      // uvs
       else if (line.startsWith("vt ")) {
         var values = line.substring(3).split(" ");
 
@@ -114,7 +155,7 @@ class Object3DModel {
           double.parse(values[1]),
         ));
       }
-      // parse a material
+      // materials
       else if (line.startsWith("usemtl ")) {
         material = line.substring(7).toLowerCase();
         logger("-----_parseObj usemtl $material");
@@ -162,6 +203,9 @@ class Object3DModel {
           colors.add(flutterColors.Colors.white);
       }
     }
+
+    if (centerPivot) _toCenterPivot();
+
     logger("-----_parseObj END");
   }
 

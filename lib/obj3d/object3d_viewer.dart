@@ -48,6 +48,7 @@ class Object3DViewer extends StatefulWidget {
   final Color color;
   final double initialZoom;
   final int panDistanceToActivate;
+  final bool centerPivot;
 
   currentState() => animationController.state;
 
@@ -72,6 +73,7 @@ class Object3DViewer extends StatefulWidget {
     this.onZoomChangeListener,
     this.onRotationChangeListener,
     this.color,
+    this.centerPivot = false,
   });
 
   @override
@@ -157,7 +159,7 @@ class Object3DViewerState extends State<Object3DViewer> {
 
   _newModel(String contObj, String contMtl) {
     setState(() {
-      model = Object3DModel();
+      model = Object3DModel(widget.centerPivot);
       model.parseFrom(contObj, contMtl);
     });
 

@@ -126,6 +126,7 @@ class _MyHomePageState extends State<MyHomePage> {
             child: Stack(
           children: [
             Object3DViewer(
+              centerPivot: true,
               refreshMilliseconds: 10,
               size: Size(ScreenUtils.width, ScreenUtils.height),
               animationController: _object3DViewerController,
