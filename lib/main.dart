@@ -103,7 +103,7 @@ class _MyHomePageState extends State<MyHomePage> {
             Object3DViewer(
               centerPivot: false,
               gridsMaxTile: 20,
-              gridsTileSize: 10.5,
+              gridsTileSize: 0.5,
               refreshMilliseconds: 10,
               size: Size(ScreenUtils.width, ScreenUtils.height),
               animationController: _object3DViewerController,
