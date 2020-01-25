@@ -49,6 +49,10 @@ class Object3DViewer extends StatefulWidget {
   final double initialZoom;
   final int panDistanceToActivate;
   final bool centerPivot;
+  final bool showGrids;
+  final Color gridsColor;
+  final int gridsMaxTile;
+  final double gridsTileSize;
 
   currentState() => animationController.state;
 
@@ -74,6 +78,10 @@ class Object3DViewer extends StatefulWidget {
     this.onRotationChangeListener,
     this.color,
     this.centerPivot = false,
+    this.showGrids = true,
+    this.gridsColor = const Color(0xff4b4b4b),
+    this.gridsMaxTile = 10,
+    this.gridsTileSize = 1.0,
   });
 
   @override
@@ -103,6 +111,7 @@ class Object3DViewerState extends State<Object3DViewer> {
   double angleZ = 0.0;
   double previousZoom;
   double zoom;
+  var rotation = Math.Vector3(0, 0, 0);
   Offset startingFocalPoint;
   Offset previousOffset;
   Offset offset = Offset.zero;
@@ -178,8 +187,8 @@ class Object3DViewerState extends State<Object3DViewer> {
     angleX = r.x;
     angleY = r.y;
     angleZ = r.z;
+    _rotationChanged();
     setState(() {});
-    if (widget.onRotationChangeListener != null) widget.onRotationChangeListener(Math.Vector3(angleX, angleY, angleZ));
   }
 
   rotateX(double v) {
@@ -187,8 +196,8 @@ class Object3DViewerState extends State<Object3DViewer> {
     if (angleX > 360)
       angleX = angleX - 360;
     else if (angleX < 0) angleX = 360 - angleX;
+    _rotationChanged();
     setState(() {});
-    if (widget.onRotationChangeListener != null) widget.onRotationChangeListener(Math.Vector3(angleX, angleY, angleZ));
   }
 
   rotateY(double v) {
@@ -196,8 +205,8 @@ class Object3DViewerState extends State<Object3DViewer> {
     if (angleY > 360)
       angleY = angleY - 360;
     else if (angleY < 0) angleY = 360 - angleY;
+    _rotationChanged();
     setState(() {});
-    if (widget.onRotationChangeListener != null) widget.onRotationChangeListener(Math.Vector3(angleX, angleY, angleZ));
   }
 
   rotateZ(double v) {
@@ -205,8 +214,13 @@ class Object3DViewerState extends State<Object3DViewer> {
     if (angleZ > 360)
       angleZ = angleZ - 360;
     else if (angleZ < 0) angleZ = 360 - angleZ;
+    _rotationChanged();
     setState(() {});
-    if (widget.onRotationChangeListener != null) widget.onRotationChangeListener(Math.Vector3(angleX, angleY, angleZ));
+  }
+
+  _rotationChanged() {
+    rotation.setValues(angleX, angleY, angleZ);
+    if (widget.onRotationChangeListener != null) widget.onRotationChangeListener(rotation);
   }
 
   _startRefresh() {
@@ -275,14 +289,12 @@ class Object3DRenderer extends CustomPainter {
   Paint paintFill = Paint();
   Paint paintWireframe = Paint();
   Paint paintWireframeBlue = Paint();
+  Paint paintGrids = Paint();
+  Paint paintGridsMain = Paint();
   final Object3DViewer widget;
   List<List<double>> depthBuffer;
-
-  //List<Math.Vector3> indexedVertices;
   List<Math.Vector2> indexedUVs;
   List<Math.Vector3> indexedNormals;
-
-  //List<Map<String, dynamic>> sortedItems;
 
   Object3DRenderer(this.widget) {
     _init();
@@ -294,6 +306,11 @@ class Object3DRenderer extends CustomPainter {
     paintWireframe.color = widget.wireframeColor;
     paintWireframeBlue.style = PaintingStyle.stroke;
     paintWireframeBlue.color = Colors.blue;
+    paintGrids.style = PaintingStyle.stroke;
+    paintGrids.color = widget.gridsColor;
+    paintGridsMain.style = PaintingStyle.stroke;
+    paintGridsMain.color = Colors.black;
+    paintGridsMain.strokeWidth = 1;
 
     _clearDepthBuffer();
   }
@@ -335,7 +352,7 @@ class Object3DRenderer extends CustomPainter {
 
   _clearDepthBuffer() {
     drawnPointCount = 0;
-    depthBuffer = List.generate(widget.size.width.toInt(), (_) => new List.filled(widget.size.height.toInt(), double.maxFinite));
+    depthBuffer = List.generate(widget.size.width.toInt(), (_) => List.filled(widget.size.height.toInt(), double.maxFinite));
   }
 
   _transformVertex(Math.Vector3 vertex) {
@@ -350,9 +367,51 @@ class Object3DRenderer extends CustomPainter {
     return trans.transform3(vertex);
   }
 
+  _drawGrids(Canvas canvas) {
+    final steps = widget.gridsTileSize;
+    final distance = (widget.gridsMaxTile * steps).toInt();
+
+    for (int i = -distance ~/ steps; i <= distance ~/ steps; i++) {
+      final p1 = _gen2DPoint(_transformVertex(Math.Vector3(-distance.toDouble(), 0, -i * steps.toDouble())));
+      final p2 = _gen2DPoint(_transformVertex(Math.Vector3(distance.toDouble(), 0, -i * steps.toDouble())));
+      canvas.drawLine(p1, p2, paintGrids);
+
+      final p3 = _gen2DPoint(_transformVertex(Math.Vector3(-distance.toDouble(), 0, i * steps.toDouble())));
+      final p4 = _gen2DPoint(_transformVertex(Math.Vector3(distance.toDouble(), 0, i * steps.toDouble())));
+      canvas.drawLine(p3, p4, paintGrids);
+
+      if (i == 0) {
+        canvas.drawLine(p1, p2, paintGridsMain);
+      }
+    }
+
+    for (int i = -distance ~/ steps; i <= distance ~/ steps; i++) {
+      final p1 = _gen2DPoint(_transformVertex(Math.Vector3(-i * steps.toDouble(), 0, -distance.toDouble())));
+      final p2 = _gen2DPoint(_transformVertex(Math.Vector3(-i * steps.toDouble(), 0, distance.toDouble())));
+      canvas.drawLine(p1, p2, paintGrids);
+
+      final p3 = _gen2DPoint(_transformVertex(Math.Vector3(i * steps.toDouble(), 0, -distance.toDouble())));
+      final p4 = _gen2DPoint(_transformVertex(Math.Vector3(i * steps.toDouble(), 0, distance.toDouble())));
+      canvas.drawLine(p3, p4, paintGrids);
+
+      if (i == 0) {
+        canvas.drawLine(p1, p2, paintGridsMain);
+      }
+    }
+  }
+
+  Offset _gen2DPoint(Math.Vector3 v) {
+    final vn = Math.Vector3.copy(v);
+    return Offset(vn.x, vn.y);
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     stopWatch.start();
+
+    if (widget.showGrids) {
+      _drawGrids(canvas);
+    }
 
     final model = widget.currentState().model;
 
@@ -479,10 +538,20 @@ class Object3DRenderer extends CustomPainter {
 
   _drawInfo(Canvas canvas, int verticesCount) {
     if (widget.showInfo) {
-      drawText(canvas, "verts: " + verticesCount.toString() + " points: $drawnPointCount", Offset(20, ScreenUtils.height - 120), fontSize: 15);
+      final rot = widget.currentState().rotation;
+
       String fps = (1000 / stopWatch.elapsed.inMilliseconds).toStringAsFixed(0);
-      drawText(canvas, "fps: " + fps + "  zoom: " + widget.currentState().zoom.toStringAsFixed(1), Offset(20, ScreenUtils.height - 100));
-      drawText(canvas, "path: " + widget.objPath, Offset(20, ScreenUtils.height - 145), fontSize: 12);
+      drawText(canvas, "fps: " + fps, Offset(20, ScreenUtils.height - 80));
+
+      drawText(canvas, "verts: " + verticesCount.toString() + " points: $drawnPointCount", Offset(20, ScreenUtils.height - 130), fontSize: 14);
+
+      drawText(
+          canvas,
+          "zoom: " + widget.currentState().zoom.toStringAsFixed(1) + " rot: (" + rot.x.toStringAsFixed(0) + ", " + rot.y.toStringAsFixed(0) + ", " + rot.z.toStringAsFixed(0) + ")",
+          Offset(20, ScreenUtils.height - 110),
+          fontSize: 14);
+
+      drawText(canvas, "path: " + widget.objPath, Offset(20, ScreenUtils.height - 160), fontSize: 12);
     }
   }
 
