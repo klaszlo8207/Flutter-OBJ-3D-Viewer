@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_obj3d_test/obj3d/painter/globals.dart';
 import 'package:flutter_obj3d_test/obj3d/painter/scanline_data.dart';
 import 'package:flutter_obj3d_test/obj3d/painter/texture_data.dart';
 import 'package:flutter_obj3d_test/utils/math_utils.dart';
@@ -11,7 +12,7 @@ import 'package:vector_math/vector_math.dart' as Math;
 /// lostinwar22@gmail.com
 ///
 
-void drawFilledTriangle(
+void drawTexturedTrianglePoints(
   Canvas canvas,
   List<List<double>> depthBuffer,
   Math.Vector3 v1,
@@ -92,7 +93,6 @@ void drawFilledTriangle(
         data.setNdotlb(nl3);
         data.setNdotlc(nl1);
         data.setNdotld(nl2);
-
          */
 
         if (texture != null) {
@@ -209,6 +209,7 @@ void processScanLine(
   // Starting X & ending X
   int sx = MathUtils.interpolate(pa.x, pb.x, gradient1).toInt();
   int ex = MathUtils.interpolate(pc.x, pd.x, gradient2).toInt();
+
   // Starting Z & ending Z
   double z1 = MathUtils.interpolate(pa.z, pb.z, gradient1);
   double z2 = MathUtils.interpolate(pc.z, pd.z, gradient2);
@@ -245,39 +246,35 @@ void processScanLine(
       u = MathUtils.interpolate(su, eu, gradient);
       v = MathUtils.interpolate(sv, ev, gradient);
 
-      Color textureColor = texture.map(u, v);
+      Color textureColor = texture.map(u, 1- v);
 
       r = (textureColor.red / 255);
       g = (textureColor.green / 255);
       b = (textureColor.blue / 255);
     }
 
-    final rn = (brightness * r);
-    final gn = (brightness * g);
-    final bn = (brightness * b);
+    final rn = ((1 - brightness) * r);
+    final gn = ((1 - brightness) * g);
+    final bn = ((1 - brightness) * b);
 
     Color rgb = Color.fromARGB(255, (rn * 255).toInt(), (gn * 255).toInt(), (bn * 255).toInt());
 
     // Draw point only if it is visible (Z-Buffering)
     try {
-      if (depthBuffer[x][data.getCurrentY()] >= z) {
-        depthBuffer[x][data.getCurrentY()] = z;
+      //if (depthBuffer[x][data.getCurrentY()] >= z) {
+        //depthBuffer[x][data.getCurrentY()] = z;
         _drawPoint(canvas, new Math.Vector3(x.toDouble(), data.getCurrentY().toDouble(), z), rgb, u, v);
-      }
+      //}
     } catch (e) {}
   }
 }
-
-final Paint paintRasterizer = Paint();
-int drawnPointCount = 0;
 
 _drawPoint(Canvas canvas, Math.Vector3 v, Color c, double s, double t) {
   paintRasterizer.style = PaintingStyle.stroke;
   paintRasterizer.strokeWidth = 1;
   paintRasterizer.color = c;
+  paintRasterizer.shader = null;
 
   final points = [Offset(v.x.toDouble(), v.y.toDouble())];
   canvas.drawPoints(PointMode.points, points, paintRasterizer);
-
-  drawnPointCount++;
 }

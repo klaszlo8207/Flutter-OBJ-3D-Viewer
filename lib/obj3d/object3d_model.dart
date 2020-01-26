@@ -2,7 +2,7 @@ import 'dart:core';
 import 'dart:ui';
 import 'package:flutter_obj3d_test/utils/logger.dart';
 import 'package:vector_math/vector_math.dart';
-import 'package:flutter/src/material/colors.dart' as flutterColors;
+import 'package:flutter/src/material/colors.dart' as FlutterColors;
 
 ///
 /// Created by Kozári László in 2020.01.06
@@ -195,12 +195,12 @@ class Object3DModel {
         faceNormals.add(List.from([v02, v12, v22]));
 
         if (material != "") {
-          var color = flutterColors.Colors.white;
+          var color = FlutterColors.Colors.white;
           if (materials[material] != null) color = materials[material];
           colors.add(color);
           //logger("-----_parseObj color added $color");
         } else
-          colors.add(flutterColors.Colors.white);
+          colors.add(FlutterColors.Colors.white);
       }
     }
 
@@ -230,7 +230,7 @@ class Object3DModel {
 
           materials.putIfAbsent(mtlName, () => _toRGB(r, g, b));
         } catch (e) {
-          materials.putIfAbsent(mtlName, () => flutterColors.Colors.white);
+          materials.putIfAbsent(mtlName, () => FlutterColors.Colors.white);
         }
       }
     }

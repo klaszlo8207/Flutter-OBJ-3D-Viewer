@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:ui';
+import 'dart:ui' as UI;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -14,15 +14,12 @@ import 'package:image/image.dart' as IMG;
 ///
 
 class TextureData {
-  IMG.Image image;
+  IMG.Image imageIMG;
+  UI.Image imageUI;
   int width;
   int height;
 
-  TextureData(String path, {int resizeWidth = 120}) {
-    _load(path, resizeWidth: resizeWidth);
-  }
-
-  _load(String path, {int resizeWidth}) async {
+  load(BuildContext context,String path, {int resizeWidth}) async {
     ByteData imageData;
 
     if (path.startsWith("assets/"))
@@ -37,18 +34,21 @@ class TextureData {
     final buffer = imageData.buffer;
     final imageInBytes = buffer.asUint8List(imageData.offsetInBytes, imageData.lengthInBytes);
     IMG.Image resized = IMG.copyResize(IMG.decodeImage(imageInBytes), width: resizeWidth);
-    image = resized;
-    width = image.width;
-    height = image.height;
+
+    imageIMG = resized;
+    width = imageIMG.width;
+    height = imageIMG.height;
+
+    imageUI = await ImageLoader.loadImage(context, path);
   }
 
   Color map(double tu, double tv) {
-    if (image == null) {
+    if (imageIMG == null) {
       return Colors.white;
     }
     int u = ((tu * width).toInt() % width).abs();
     int v = ((tv * height).toInt() % height).abs();
 
-    return Color(convertABGRtoARGB(image.getPixel(u, v)));
+    return Color(convertABGRtoARGB(imageIMG.getPixel(u, v)));
   }
 }

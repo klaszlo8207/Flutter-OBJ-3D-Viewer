@@ -1,16 +1,16 @@
 library flutter_obj3d_viewer;
 
-import 'dart:async';
 import 'dart:io';
-import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_obj3d_test/obj3d/object3d_model.dart';
+import 'package:flutter_obj3d_test/obj3d/painter/globals.dart';
 import 'package:flutter_obj3d_test/obj3d/painter/scanline_painter.dart';
 import 'package:flutter_obj3d_test/obj3d/painter/texture_data.dart';
+import 'package:flutter_obj3d_test/obj3d/painter/vertices_painter.dart';
 import 'package:flutter_obj3d_test/utils/math_utils.dart';
 import 'package:flutter_obj3d_test/utils/logger.dart';
 import 'package:flutter_obj3d_test/utils/utils.dart';
@@ -25,26 +25,18 @@ import 'package:vector_math/vector_math.dart' as Math;
 /// lostinwar22@gmail.com
 ///
 
-const MAX_SUPPORTED_VERTICES = 16000;
-
 class Object3DViewer extends StatefulWidget {
   final Size size;
   final String objPath;
   final String texturePath;
   final bool showInfo;
-  final bool animateRotateX;
-  final bool animateRotateY;
-  final bool animateRotateZ;
-  final bool showWireframe;
-  final Color wireframeColor;
   final Math.Vector3 initialAngles;
   final DrawMode drawMode;
   final void Function(double dx) onHorizontalDragUpdate;
   final void Function(double dy) onVerticalDragUpdate;
-  final Object3DViewerController animationController;
+  final Object3DViewerController object3DViewerController;
   final Function(double) onZoomChangeListener;
   final Function(Math.Vector3) onRotationChangeListener;
-  final int refreshMilliseconds;
   final Color color;
   final double initialZoom;
   final int panDistanceToActivate;
@@ -53,22 +45,26 @@ class Object3DViewer extends StatefulWidget {
   final Color gridsColor;
   final int gridsMaxTile;
   final double gridsTileSize;
+  RasterizerMethod rasterizerMethod;
+  bool showWireframe;
+  Color wireframeColor;
+  Math.Vector3 lightPosition;
+  final Color backgroundColor;
+  final Color lightColor;
 
-  currentState() => animationController.state;
+  currentState() => object3DViewerController.state;
 
-  const Object3DViewer({
+  Object3DViewer({
     @required this.size,
     @required this.objPath,
     @required this.initialZoom,
-    @required this.refreshMilliseconds,
-    @required this.animationController,
+    @required this.object3DViewerController,
+    @required this.lightPosition,
+    this.backgroundColor = const Color(0xff353535),
     this.texturePath,
-    this.showInfo = false,
-    this.showWireframe = false,
+    this.showInfo,
+    this.showWireframe,
     this.wireframeColor = Colors.black,
-    this.animateRotateX = false,
-    this.animateRotateY = false,
-    this.animateRotateZ = false,
     this.initialAngles,
     this.drawMode = DrawMode.SHADED,
     this.onHorizontalDragUpdate,
@@ -76,19 +72,23 @@ class Object3DViewer extends StatefulWidget {
     this.panDistanceToActivate,
     this.onZoomChangeListener,
     this.onRotationChangeListener,
-    this.color,
+    this.color = Colors.black,
     this.centerPivot = false,
     this.showGrids = true,
     this.gridsColor = const Color(0xff4b4b4b),
     this.gridsMaxTile = 10,
     this.gridsTileSize = 1.0,
+    this.rasterizerMethod = RasterizerMethod.NewMethod,
+    this.lightColor = Colors.white,
   });
 
   @override
-  Object3DViewerState createState() => animationController.state;
+  Object3DViewerState createState() => object3DViewerController.state;
 }
 
 enum DrawMode { WIREFRAME, SHADED, TEXTURED }
+
+enum RasterizerMethod { OldMethod, NewMethod }
 
 class Object3DViewerController extends StatefulWidget {
   final Object3DViewerState state = Object3DViewerState();
@@ -101,8 +101,22 @@ class Object3DViewerController extends StatefulWidget {
 
   rotateZ(v) => state.rotateZ(v);
 
+  reset() => state.reset();
+
+  refresh() {
+    if (state.object3DRenderer != null) state.object3DRenderer.refresh();
+  }
+
   @override
   State<StatefulWidget> createState() => state;
+
+  setLightPosition(Math.Vector3 lightPosition) => state.setLightPosition(lightPosition);
+
+  showWireframe(bool showWireframe) => state.showWireframe(showWireframe);
+
+  useNewAlgorithm(bool useNewAlgorithm) => state.useNewAlgorithm(useNewAlgorithm);
+
+  getWidget() => state.widget;
 }
 
 class Object3DViewerState extends State<Object3DViewer> {
@@ -116,11 +130,11 @@ class Object3DViewerState extends State<Object3DViewer> {
   Offset previousOffset;
   Offset offset = Offset.zero;
   Object3DModel model;
-  Timer renderTimer;
   TextureData textureData;
   bool isLoading = false;
   double viewPortX = 0.0;
   double viewPortY = 0.0;
+  Object3DRenderer object3DRenderer;
 
   initState() {
     super.initState();
@@ -131,11 +145,14 @@ class Object3DViewerState extends State<Object3DViewer> {
 
   reload() async => await _parse();
 
+  reset() async => object3DRenderer = null;
+
   _parse() async {
     logger("----- PARSE ${widget.objPath}");
 
     setState(() => isLoading = true);
 
+    object3DRenderer = null;
     zoom = widget.initialZoom;
 
     if (!widget.objPath.startsWith("assets/")) {
@@ -155,13 +172,14 @@ class Object3DViewerState extends State<Object3DViewer> {
     }
 
     if (widget.texturePath != null) {
-      textureData = TextureData(widget.texturePath, resizeWidth: 200);
+      textureData = TextureData();
+      await textureData.load(context, widget.texturePath, resizeWidth: 200);
     }
-
-    if (widget.animateRotateX || widget.animateRotateY || widget.animateRotateZ) _startRefresh();
 
     viewPortX = (widget.size.width / 2).toDouble();
     viewPortY = (widget.size.height / 2).toDouble();
+
+    paintRasterizer.shader = null;
 
     setState(() => isLoading = false);
   }
@@ -179,7 +197,6 @@ class Object3DViewerState extends State<Object3DViewer> {
 
   @override
   void dispose() {
-    if (widget.animateRotateX || widget.animateRotateY || widget.animateRotateZ) _endRefresh();
     super.dispose();
   }
 
@@ -188,7 +205,7 @@ class Object3DViewerState extends State<Object3DViewer> {
     angleY = r.y;
     angleZ = r.z;
     _rotationChanged();
-    setState(() {});
+    if (object3DRenderer != null) object3DRenderer.refresh();
   }
 
   rotateX(double v) {
@@ -197,7 +214,7 @@ class Object3DViewerState extends State<Object3DViewer> {
       angleX = angleX - 360;
     else if (angleX < 0) angleX = 360 - angleX;
     _rotationChanged();
-    setState(() {});
+    if (object3DRenderer != null) object3DRenderer.refresh();
   }
 
   rotateY(double v) {
@@ -206,7 +223,7 @@ class Object3DViewerState extends State<Object3DViewer> {
       angleY = angleY - 360;
     else if (angleY < 0) angleY = 360 - angleY;
     _rotationChanged();
-    setState(() {});
+    if (object3DRenderer != null) object3DRenderer.refresh();
   }
 
   rotateZ(double v) {
@@ -215,7 +232,7 @@ class Object3DViewerState extends State<Object3DViewer> {
       angleZ = angleZ - 360;
     else if (angleZ < 0) angleZ = 360 - angleZ;
     _rotationChanged();
-    setState(() {});
+    if (object3DRenderer != null) object3DRenderer.refresh();
   }
 
   _rotationChanged() {
@@ -223,50 +240,40 @@ class Object3DViewerState extends State<Object3DViewer> {
     if (widget.onRotationChangeListener != null) widget.onRotationChangeListener(rotation);
   }
 
-  _startRefresh() {
-    renderTimer = Timer.periodic(const Duration(milliseconds: 10), (t) {
-      if (widget.animateRotateX) {
-        rotateY(1.2);
-      }
-      if (widget.animateRotateY) {
-        rotateX(1.2);
-      }
-      if (widget.animateRotateZ) {
-        rotateZ(1.2);
-      }
-    });
-  }
-
-  _endRefresh() => renderTimer.cancel();
-
   _handleScaleStart(initialFocusPoint) {
-    setState(() {
-      startingFocalPoint = initialFocusPoint;
-      previousOffset = offset;
-      previousZoom = zoom;
-    });
+    startingFocalPoint = initialFocusPoint;
+    previousOffset = offset;
+    previousZoom = zoom;
+    if (object3DRenderer != null) object3DRenderer.refresh();
   }
 
   _handleScaleUpdate(changedFocusPoint, scale) {
-    setState(() {
-      zoom = previousZoom * scale;
-      final Offset normalizedOffset = (startingFocalPoint - previousOffset) / previousZoom;
-      offset = changedFocusPoint - normalizedOffset * zoom;
-      if (widget.onZoomChangeListener != null) widget.onZoomChangeListener(zoom);
-    });
+    zoom = previousZoom * scale;
+    final Offset normalizedOffset = (startingFocalPoint - previousOffset) / previousZoom;
+    offset = changedFocusPoint - normalizedOffset * zoom;
+    if (widget.onZoomChangeListener != null) widget.onZoomChangeListener(zoom);
+    if (object3DRenderer != null) object3DRenderer.refresh();
   }
 
   @override
   Widget build(BuildContext context) {
-    Future.delayed(Duration(milliseconds: widget.refreshMilliseconds), () => setState(() {}));
+    /*
+    Future.delayed(Duration(milliseconds: widget.refreshMilliseconds), () {
+      if (object3DRenderer != null) object3DRenderer.refresh();
+    });*/
 
     if (isLoading) {
       return Center(child: CircularProgressIndicator(backgroundColor: Colors.black));
     } else {
+      if (object3DRenderer == null) {
+        object3DRenderer = Object3DRenderer(widget);
+        object3DRenderer.refresh();
+      }
+
       return ZoomGestureDetector(
         child: RepaintBoundary(
             child: CustomPaint(
-          painter: Object3DRenderer(widget),
+          painter: object3DRenderer,
           isComplex: true,
           willChange: true,
           size: widget.size,
@@ -279,18 +286,42 @@ class Object3DViewerState extends State<Object3DViewer> {
       );
     }
   }
+
+  setLightPosition(Math.Vector3 lightPosition) {
+    widget.lightPosition = lightPosition;
+    if (object3DRenderer != null) object3DRenderer.refresh();
+  }
+
+  showWireframe(bool showWireframe) {
+    widget.showWireframe = showWireframe;
+
+    if (object3DRenderer != null) {
+      object3DRenderer.reset();
+      Future.delayed(Duration(milliseconds: 100), () {
+        object3DRenderer.refresh();
+      });
+    }
+  }
+
+  useNewAlgorithm(bool useNewAlgorithm) {
+    widget.rasterizerMethod = useNewAlgorithm ? RasterizerMethod.NewMethod : RasterizerMethod.OldMethod;
+
+    if (object3DRenderer != null) {
+      object3DRenderer.reset();
+      Future.delayed(Duration(milliseconds: 100), () {
+        object3DRenderer.refresh();
+      });
+    }
+  }
 }
 
-var lightAngle = 0.0;
-var lightPosition = Math.Vector3(20.0, 20.0, 10.0);
-
-class Object3DRenderer extends CustomPainter {
-  final stopWatch = Stopwatch();
+class Object3DRenderer extends ChangeNotifier implements CustomPainter {
   Paint paintFill = Paint();
   Paint paintWireframe = Paint();
   Paint paintWireframeBlue = Paint();
   Paint paintGrids = Paint();
   Paint paintGridsMain = Paint();
+  Paint paintBackground = Paint();
   final Object3DViewer widget;
   List<List<double>> depthBuffer;
   List<Math.Vector2> indexedUVs;
@@ -311,18 +342,22 @@ class Object3DRenderer extends CustomPainter {
     paintGridsMain.style = PaintingStyle.stroke;
     paintGridsMain.color = Colors.black;
     paintGridsMain.strokeWidth = 1;
+    paintBackground.color = widget.backgroundColor;
 
     _clearDepthBuffer();
   }
 
-  _drawTriangle(Canvas canvas, Math.Vector3 v1, Math.Vector3 v2, Math.Vector3 v3, Math.Vector2 uv1, Math.Vector2 uv2, Math.Vector2 uv3, Math.Vector3 n1, Math.Vector3 n2,
-      Math.Vector3 n3, Color color) {
+  _drawTriangle(Canvas canvas, Math.Vector3 v1, Math.Vector3 v2, Math.Vector3 v3, Math.Vector2 uv1, Math.Vector2 uv2, Math.Vector2 uv3, Math.Vector3 n1, Math.Vector3 n2, Math.Vector3 n3) {
     final path = Path();
     path.moveTo(v1.x, v1.y);
     path.lineTo(v2.x, v2.y);
     path.lineTo(v3.x, v3.y);
     path.lineTo(v1.x, v1.y);
     path.close();
+
+    final color = widget.color;
+    final lightPosition = widget.lightPosition;
+    final lightColor = widget.lightColor;
 
     final normalVector = MathUtils.normalVector3(v1, v2, v3);
     Math.Vector3 normalizedLight = Math.Vector3.copy(lightPosition).normalized();
@@ -331,27 +366,26 @@ class Object3DRenderer extends CustomPainter {
     final brightness = normal.clamp(0.1, 1.0);
 
     if (widget.drawMode == DrawMode.WIREFRAME) {
-      drawnPointCount += 3;
       canvas.drawPath(path, paintWireframeBlue);
     } else if (widget.drawMode == DrawMode.SHADED) {
-      drawnPointCount += 3;
-      final r = (brightness * color.red).toInt();
-      final g = (brightness * color.green).toInt();
-      final b = (brightness * color.blue).toInt();
-      paintFill.color = Color.fromARGB(255, r, g, b);
+      final shade = Color.lerp(color, lightColor, brightness);
+      paintFill.color = shade;
       canvas.drawPath(path, paintFill);
     } else if (widget.drawMode == DrawMode.TEXTURED) {
-      drawFilledTriangle(canvas, depthBuffer, v1, v2, v3, uv1, uv2, uv3, n1, n2, n3, color, brightness, widget.currentState().textureData, lightPosition);
+      if (widget.rasterizerMethod == RasterizerMethod.OldMethod)
+        drawTexturedTrianglePoints(canvas, depthBuffer, v1, v2, v3, uv1, uv2, uv3, n1, n2, n3, color, brightness,
+            widget.currentState().textureData, lightPosition);
+      else if (widget.rasterizerMethod == RasterizerMethod.NewMethod)
+        drawTexturedTriangleVertices(canvas, v1, v2, v3, uv1, uv2, uv3, n1, n2, n3, color,
+            widget.currentState().textureData, lightPosition, lightColor);
     }
 
-    if (widget.showWireframe) {
+    if (widget.showWireframe ?? false == true) {
       canvas.drawPath(path, paintWireframe);
-      drawnPointCount += 3;
     }
   }
 
   _clearDepthBuffer() {
-    drawnPointCount = 0;
     depthBuffer = List.generate(widget.size.width.toInt(), (_) => List.filled(widget.size.height.toInt(), double.maxFinite));
   }
 
@@ -372,12 +406,12 @@ class Object3DRenderer extends CustomPainter {
     final distance = (widget.gridsMaxTile * steps).toInt();
 
     for (int i = -distance ~/ steps; i <= distance ~/ steps; i++) {
-      final p1 = _gen2DPoint(_transformVertex(Math.Vector3(-distance.toDouble(), 0, -i * steps.toDouble())));
-      final p2 = _gen2DPoint(_transformVertex(Math.Vector3(distance.toDouble(), 0, -i * steps.toDouble())));
+      final p1 = gen2DPointFrom3D(_transformVertex(Math.Vector3(-distance.toDouble(), 0, -i * steps.toDouble())));
+      final p2 = gen2DPointFrom3D(_transformVertex(Math.Vector3(distance.toDouble(), 0, -i * steps.toDouble())));
       canvas.drawLine(p1, p2, paintGrids);
 
-      final p3 = _gen2DPoint(_transformVertex(Math.Vector3(-distance.toDouble(), 0, i * steps.toDouble())));
-      final p4 = _gen2DPoint(_transformVertex(Math.Vector3(distance.toDouble(), 0, i * steps.toDouble())));
+      final p3 = gen2DPointFrom3D(_transformVertex(Math.Vector3(-distance.toDouble(), 0, i * steps.toDouble())));
+      final p4 = gen2DPointFrom3D(_transformVertex(Math.Vector3(distance.toDouble(), 0, i * steps.toDouble())));
       canvas.drawLine(p3, p4, paintGrids);
 
       if (i == 0) {
@@ -386,12 +420,12 @@ class Object3DRenderer extends CustomPainter {
     }
 
     for (int i = -distance ~/ steps; i <= distance ~/ steps; i++) {
-      final p1 = _gen2DPoint(_transformVertex(Math.Vector3(-i * steps.toDouble(), 0, -distance.toDouble())));
-      final p2 = _gen2DPoint(_transformVertex(Math.Vector3(-i * steps.toDouble(), 0, distance.toDouble())));
+      final p1 = gen2DPointFrom3D(_transformVertex(Math.Vector3(-i * steps.toDouble(), 0, -distance.toDouble())));
+      final p2 = gen2DPointFrom3D(_transformVertex(Math.Vector3(-i * steps.toDouble(), 0, distance.toDouble())));
       canvas.drawLine(p1, p2, paintGrids);
 
-      final p3 = _gen2DPoint(_transformVertex(Math.Vector3(i * steps.toDouble(), 0, -distance.toDouble())));
-      final p4 = _gen2DPoint(_transformVertex(Math.Vector3(i * steps.toDouble(), 0, distance.toDouble())));
+      final p3 = gen2DPointFrom3D(_transformVertex(Math.Vector3(i * steps.toDouble(), 0, -distance.toDouble())));
+      final p4 = gen2DPointFrom3D(_transformVertex(Math.Vector3(i * steps.toDouble(), 0, distance.toDouble())));
       canvas.drawLine(p3, p4, paintGrids);
 
       if (i == 0) {
@@ -400,14 +434,9 @@ class Object3DRenderer extends CustomPainter {
     }
   }
 
-  Offset _gen2DPoint(Math.Vector3 v) {
-    final vn = Math.Vector3.copy(v);
-    return Offset(vn.x, vn.y);
-  }
-
   @override
   void paint(Canvas canvas, Size size) {
-    stopWatch.start();
+    canvas.drawPaint(paintBackground);
 
     if (widget.showGrids) {
       _drawGrids(canvas);
@@ -425,14 +454,6 @@ class Object3DRenderer extends CustomPainter {
 
     _clearDepthBuffer();
 
-    final d = 25.0;
-    lightAngle += 0.8;
-    if (lightAngle > 360) lightAngle = 0;
-    double fx = sin(Math.radians(lightAngle)) * d;
-    double fz = cos(Math.radians(lightAngle)) * d;
-    lightPosition.setValues(fx, d, fz);
-
-    //
     final indexedVertices = List<Math.Vector3>();
     for (int i = 0; i < model.faceVertices.length; i++) {
       final face = model.faceVertices[i];
@@ -528,22 +549,17 @@ class Object3DRenderer extends CustomPainter {
       final n2 = sorted['n2'];
       final n3 = sorted['n3'];
 
-      _drawTriangle(canvas, v1, v2, v3, uv1, uv2, uv3, n1, n2, n3, widget.color);
+      _drawTriangle(canvas, v1, v2, v3, uv1, uv2, uv3, n1, n2, n3);
     }
 
     _drawInfo(canvas, sortedItems.length);
-
-    stopWatch.stop();
   }
 
   _drawInfo(Canvas canvas, int verticesCount) {
     if (widget.showInfo) {
       final rot = widget.currentState().rotation;
 
-      String fps = (1000 / stopWatch.elapsed.inMilliseconds).toStringAsFixed(0);
-      drawText(canvas, "fps: " + fps, Offset(20, ScreenUtils.height - 80));
-
-      drawText(canvas, "verts: " + verticesCount.toString() + " points: $drawnPointCount", Offset(20, ScreenUtils.height - 130), fontSize: 14);
+      drawText(canvas, "verts: " + verticesCount.toString(), Offset(20, ScreenUtils.height - 130), fontSize: 14);
 
       drawText(
           canvas,
@@ -557,4 +573,19 @@ class Object3DRenderer extends CustomPainter {
 
   @override
   bool shouldRepaint(Object3DRenderer old) => true;
+
+  @override
+  bool hitTest(Offset position) => true;
+
+  @override
+  bool shouldRebuildSemantics(CustomPainter previous) => false;
+
+  @override
+  get semanticsBuilder => null;
+
+  refresh() => notifyListeners();
+
+  reset() {
+    if (widget.object3DViewerController != null) widget.object3DViewerController.reset();
+  }
 }

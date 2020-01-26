@@ -1,5 +1,9 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_obj3d_test/obj3d/object3d_viewer.dart';
+import 'package:provider/provider.dart';
 
 import 'package:vector_math/vector_math.dart' as Math;
 
@@ -15,12 +19,21 @@ void main() => runApp(MyApp());
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter 3d obj Parser/Viewer Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ChangeVariants()),
+      ],
+      child: Consumer<ChangeVariants>(
+        builder: (context, cv, _) {
+          return MaterialApp(
+            title: 'Flutter 3d obj Parser/Viewer Demo',
+            theme: ThemeData(
+              primarySwatch: Colors.blue,
+            ),
+            home: MyHomePage(),
+          );
+        },
       ),
-      home: MyHomePage(),
     );
   }
 }
@@ -35,29 +48,130 @@ class Object3DDetails {
   String objTexturePath;
   Math.Vector3 rotation;
   double zoom;
-  Color color;
+  Color color, lightColor;
+  double gridTileSize;
 
-  Object3DDetails(this.objPath, this.objTexturePath, this.rotation, this.zoom, this.color);
+  Object3DDetails(
+    this.objPath,
+    this.objTexturePath,
+    this.rotation,
+    this.zoom, {
+    this.color = Colors.black,
+    this.lightColor = Colors.white,
+    this.gridTileSize = 0.5,
+  });
 }
 
 List<Object3DDetails> _objects = [
-  Object3DDetails("assets/box.obj", "assets/box.jpg", Math.Vector3(80, 10, 0), 80.0, Colors.white),
-  Object3DDetails("assets/dog.obj", "assets/dog.jpg", Math.Vector3(34, 10, 0), 40.0, Colors.red),
-  Object3DDetails("assets/wolf.obj", "assets/wolf.jpg", Math.Vector3(80, 10, 0), 80.0, Colors.blue),
-  Object3DDetails("assets/fish.obj", "assets/fish.png", Math.Vector3(138, 10, 186), 41.0, Colors.green),
-  Object3DDetails("assets/cat2.obj", "assets/cat2.jpg", Math.Vector3(12, 12, 0), 34.0, Colors.amber),
-  Object3DDetails("assets/cat.obj", "assets/cat.jpg", Math.Vector3(80, 10, 0), 10.0, Colors.cyan),
+  Object3DDetails(
+    "assets/box.obj",
+    "assets/box.jpg",
+    Math.Vector3(80, 10, 0),
+    80,
+    color: Colors.black.withOpacity(0.7),
+    lightColor: Colors.white.withOpacity(0.3),
+  ),
+  Object3DDetails(
+    "assets/dog.obj",
+    "assets/dog.jpg",
+    Math.Vector3(34, 10, 0),
+    40,
+    color: Colors.black.withOpacity(0.8),
+    lightColor: Colors.white.withOpacity(0.2),
+  ),
+  Object3DDetails(
+    "assets/wolf.obj",
+    "assets/wolf.jpg",
+    Math.Vector3(80, 10, 0),
+    80,
+    color: Colors.blue.withOpacity(0.5),
+  ),
+  Object3DDetails(
+    "assets/fish.obj",
+    "assets/fish.png",
+    Math.Vector3(138, 10, 186),
+    41,
+    color: Colors.green.withOpacity(0.5),
+    lightColor: Colors.yellow.withOpacity(0.5),
+  ),
+  Object3DDetails(
+    "assets/cat2.obj",
+    "assets/cat2.jpg",
+    Math.Vector3(12, 12, 0),
+    34,
+    color: Colors.amber.withOpacity(0.5),
+    lightColor: Colors.black.withOpacity(0.5),
+  ),
+  Object3DDetails(
+    "assets/cat.obj",
+    "assets/cat.jpg",
+    Math.Vector3(80, 10, 0),
+    10,
+    color: Colors.red.withOpacity(0.6),
+    lightColor: Colors.green.withOpacity(0.4),
+    gridTileSize: 5.0,
+  ),
 ];
+
+class ChangeVariants with ChangeNotifier {
+  int _drawModeIndex = 0;
+  bool _showWireframe = false;
+  bool _useNewAlgorithm = true;
+  int _objIndex = 5;
+  double _lightAngle = 0.0;
+  Math.Vector3 _lightPosition = Math.Vector3(20.0, 20.0, 10.0);
+
+  int get objIndex => _objIndex;
+
+  double get lightAngle => _lightAngle;
+
+  Math.Vector3 get lightPosition => _lightPosition;
+
+  int get drawModeIndex => _drawModeIndex;
+
+  bool get showWireframe => _showWireframe;
+
+  bool get useNewAlgorithm => _useNewAlgorithm;
+
+  set objIndex(int value) {
+    _objIndex = value;
+    notifyListeners();
+  }
+
+  set drawModeIndex(int value) {
+    _drawModeIndex = value;
+    notifyListeners();
+  }
+
+  set showWireframe(bool value) {
+    _showWireframe = value;
+    notifyListeners();
+  }
+
+  set useNewAlgorithm(bool value) {
+    _useNewAlgorithm = value;
+    notifyListeners();
+  }
+
+  set lightAngle(double value) {
+    _lightAngle = value;
+    notifyListeners();
+  }
+
+  set lightPosition(Math.Vector3 value) {
+    _lightPosition = value;
+    notifyListeners();
+  }
+}
 
 class _MyHomePageState extends State<MyHomePage> {
   Object3DViewerController _object3DViewerController;
-  int _drawModeIndex = 0;
-  bool _showWireframe = false;
-  int _objIndex = 4;
+  Timer _renderTimer;
+  ChangeVariants _changeVariantsSet;
 
   List<DrawMode> _drawModes = [
-    DrawMode.SHADED,
     DrawMode.TEXTURED,
+    DrawMode.SHADED,
     DrawMode.WIREFRAME,
   ];
 
@@ -68,47 +182,75 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   _init() async {
+    _changeVariantsSet = Provider.of<ChangeVariants>(context, listen: false);
     _object3DViewerController = Object3DViewerController();
+    _startTimer();
+  }
+
+  _startTimer() {
+    _renderTimer = Timer.periodic(const Duration(milliseconds: 50), (t) {
+      final d = 25.0;
+      _changeVariantsSet.lightAngle += 1.8;
+      if (_changeVariantsSet.lightAngle > 360) _changeVariantsSet.lightAngle = 0;
+      double fx = sin(Math.radians(_changeVariantsSet.lightAngle)) * d;
+      double fz = cos(Math.radians(_changeVariantsSet.lightAngle)) * d;
+      _changeVariantsSet.lightPosition.setValues(fx, fx, fz);
+      _object3DViewerController.setLightPosition(_changeVariantsSet.lightPosition);
+    });
+  }
+
+  _endTimer() => _renderTimer.cancel();
+
+  @override
+  void dispose() {
+    super.dispose();
+    _endTimer();
   }
 
   _nextObj() async {
-    _objIndex++;
-    if (_objIndex >= _objects.length) _objIndex = 0;
-    setState(() {});
+    _changeVariantsSet.objIndex++;
+    if (_changeVariantsSet.objIndex >= _objects.length) _changeVariantsSet.objIndex = 0;
+    _object3DViewerController.refresh();
 
     Future.delayed(Duration(milliseconds: 50), () {
       _object3DViewerController.reload().then((_) {
         Future.delayed(Duration(milliseconds: 100), () {
-          setState(() => {});
+          _object3DViewerController.refresh();
         });
       });
     });
   }
 
   _nextDrawMode() {
-    _drawModeIndex++;
-    if (_drawModeIndex >= _drawModes.length) _drawModeIndex = 0;
-    setState(() {});
+    _changeVariantsSet.drawModeIndex++;
+    if (_changeVariantsSet.drawModeIndex >= _drawModes.length) _changeVariantsSet.drawModeIndex = 0;
+    _object3DViewerController.reset();
+    _object3DViewerController.refresh();
   }
 
   @override
   Widget build(BuildContext context) {
     ScreenUtils.init(context);
 
+    final changeVariantsGet = Provider.of<ChangeVariants>(context);
+    final object = _objects[changeVariantsGet.objIndex];
+
     return Scaffold(
-        backgroundColor: const Color(0xff353535), //TODO
+        backgroundColor: const Color(0xff353535),
         body: SafeArea(
             child: Stack(
           children: [
             Object3DViewer(
-              centerPivot: false,
+              lightPosition: changeVariantsGet.lightPosition,
+              lightColor: object.lightColor,
+              centerPivot: true,
+              rasterizerMethod: changeVariantsGet.useNewAlgorithm ? RasterizerMethod.NewMethod : RasterizerMethod.OldMethod,
               gridsMaxTile: 20,
-              gridsTileSize: 0.5,
-              refreshMilliseconds: 10,
+              gridsTileSize: object.gridTileSize,
               size: Size(ScreenUtils.width, ScreenUtils.height),
-              animationController: _object3DViewerController,
+              object3DViewerController: _object3DViewerController,
               onHorizontalDragUpdate: (d) {
-                if (_objIndex == 4)
+                if (changeVariantsGet.objIndex == 4)
                   _object3DViewerController.rotateY(d); //cat2
                 else
                   _object3DViewerController.rotateZ(-d);
@@ -116,16 +258,16 @@ class _MyHomePageState extends State<MyHomePage> {
               onVerticalDragUpdate: (d) {
                 _object3DViewerController.rotateX(d);
               },
-              initialZoom: _objects[_objIndex].zoom,
-              initialAngles: _objects[_objIndex].rotation,
-              objPath: _objects[_objIndex].objPath,
-              texturePath: _objects[_objIndex].objTexturePath,
-              drawMode: _drawModes[_drawModeIndex],
-              onZoomChangeListener: (zoom) => _objects[_objIndex].zoom = zoom,
-              onRotationChangeListener: (Math.Vector3 rotation) => _objects[_objIndex].rotation.setFrom(rotation),
-              color: _objects[_objIndex].color,
+              initialZoom: object.zoom,
+              initialAngles: object.rotation,
+              objPath: object.objPath,
+              texturePath: object.objTexturePath,
+              drawMode: _drawModes[changeVariantsGet.drawModeIndex],
+              onZoomChangeListener: (zoom) => object.zoom = zoom,
+              onRotationChangeListener: (Math.Vector3 rotation) => object.rotation.setFrom(rotation),
+              color: object.color,
               showInfo: true,
-              showWireframe: _showWireframe,
+              showWireframe: changeVariantsGet.showWireframe,
               wireframeColor: Colors.red,
               panDistanceToActivate: 40,
             ),
@@ -134,19 +276,34 @@ class _MyHomePageState extends State<MyHomePage> {
                 children: <Widget>[
                   FlatButton(
                     color: Colors.white,
-                    child: Text("Draw mode"),
-                    onPressed: () => _nextDrawMode(),
+                    child: Text("Next obj"),
+                    onPressed: () => _nextObj(),
                   ),
                   FlatButton(
                     color: Colors.white,
-                    child: Text("Next obj"),
-                    onPressed: () => _nextObj(),
+                    child: Text("Draw mode"),
+                    onPressed: () => _nextDrawMode(),
                   ),
                   SizedBox(
                     child: CheckboxListTile(
                       title: Text("Wireframe"),
-                      value: _showWireframe,
-                      onChanged: (v) => setState(() => _showWireframe = v),
+                      value: changeVariantsGet.showWireframe,
+                      onChanged: (v) {
+                        _changeVariantsSet.showWireframe = v;
+                        _object3DViewerController.showWireframe(_changeVariantsSet.showWireframe);
+                      },
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
+                    width: 200,
+                  ),
+                  SizedBox(
+                    child: CheckboxListTile(
+                      title: Text("Use new algorithm"),
+                      value: changeVariantsGet.useNewAlgorithm,
+                      onChanged: (v) {
+                        _changeVariantsSet.useNewAlgorithm = v;
+                        _object3DViewerController.useNewAlgorithm(_changeVariantsSet.useNewAlgorithm);
+                      },
                       controlAffinity: ListTileControlAffinity.leading,
                     ),
                     width: 200,

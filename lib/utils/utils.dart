@@ -9,6 +9,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:flutter_obj3d_test/utils/screen_utils.dart';
 
+import 'package:vector_math/vector_math.dart' as Math;
+
 ///
 /// Created by Kozári László in 2020.01.06
 /// lostinwar22@gmail.com
@@ -43,10 +45,15 @@ Color randomColor() => Color((Random().nextDouble() * 0xFFFFFF).toInt() << 0).wi
 
 Color hexToColor(String code) => Color(int.parse(code.substring(1, 7), radix: 16) + 0xff000000);
 
+Offset gen2DPointFrom3D(Math.Vector3 v) {
+  final vn = Math.Vector3.copy(v);
+  return Offset(vn.x, vn.y);
+}
+
 class ImageLoader {
   ImageLoader._();
 
-  Future<ui.Image> loadImage(BuildContext context, String path) async {
+  static Future<ui.Image> loadImage(BuildContext context, String path) async {
     final Completer<ui.Image> completer = new Completer();
 
     var fileImageUint8List;
