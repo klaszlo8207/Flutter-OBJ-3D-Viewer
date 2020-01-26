@@ -15,44 +15,7 @@ An OBJ 3D Viewer and Parser for flutter/dart. Also a simple Rasterizer.
 
 ## Video
 
-
-[![Video](http://img.youtube.com/vi/q4wVxLKzqqs/0.jpg)](https://www.youtube.com/watch?v=q4wVxLKzqqs)
-
-
-## Usage
-```
- Object3DViewer(
-   refreshMilliseconds: 10,
-   size: Size(ScreenUtils.width, ScreenUtils.height),
-   animationController: _object3DViewerController,
-   onHorizontalDragUpdate: (d) {
-     if (_objIndex == 4)
-       _object3DViewerController.rotateY(d); //macska1
-     else
-       _object3DViewerController.rotateZ(-d);
-   },
-   onVerticalDragUpdate: (d) {
-     _object3DViewerController.rotateX(d);
-   },
-   initialZoom: _zooms[_objIndex],
-   initialAngles: _angles[_objIndex],
-   objPath: _objPaths[_objIndex],
-   texturePath: _objTexturePaths[_objIndex],
-   drawMode: _drawModes[_drawModeIndex],
-   onZoomChangeListener: (zoom) => _zooms[_objIndex] = zoom,
-   onRotationChangeListener: (Math.Vector3 angles) => _angles[_objIndex] = angles,
-   color: _colors[_objIndex],
-   showInfo: true,
-   showWireframe: _showWireframe,
-   wireframeColor: Colors.red,
-   panDistanceToActivate: 40,
-   centerPivot: false,
-   showGrids: true,
-   gridsColor: const Color(0xff4b4b4b),
-   gridsMaxTile: 10,
-   gridsTileSize: 1.0,
-),
-```
+[![Video](http://img.youtube.com/vi/Og3Y01Ty440/0.jpg)](https://www.youtube.com/watch?v=Og3Y01Ty440)
 
 ## Example
 
@@ -60,34 +23,35 @@ https://github.com/klaszlo8207/Flutter-OBJ-3D-Viewer/blob/master/lib/main.dart
             
 ## Properties
   ```
-  const Object3DViewer({
-    @required this.size,    //size of the widget
-    @required this.objPath, //path of the obj file, assets or sd card
-    @required this.initialZoom, //initial zoom
-    @required this.refreshMilliseconds, 
-    @required this.animationController, //controller for the animation
-    this.texturePath, //the texture path
-    this.showInfo = false, //info of the obj
-    this.showWireframe = false,
+  Object3DViewer({
+    @required this.size,
+    @required this.objPath,
+    @required this.initialZoom,
+    @required this.object3DViewerController,
+    @required this.lightPosition,
+    this.backgroundColor = const Color(0xff353535),
+    this.texturePath,
+    this.showInfo,
+    this.showWireframe,
     this.wireframeColor = Colors.black,
-    this.animateRotateX = false, //rotate and animate the model
-    this.animateRotateY = false,
-    this.animateRotateZ = false,
-    this.initialAngles, //the initial angles
-    this.drawMode = DrawMode.SHADED, //drawmode: SHADED, WIREFRAME, TEXTURED
-    this.onHorizontalDragUpdate, 
+    this.initialAngles,
+    this.drawMode = DrawMode.SHADED,
+    this.onHorizontalDragUpdate,
     this.onVerticalDragUpdate,
-    this.panDistanceToActivate, //the distance when to activate the swype
-    this.onZoomChangeListener, //zoom listener
-    this.onRotationChangeListener, //rotation listener
-    this.color,
-    this.centerPivot = false, //center the pivot/rotation point
-    this.showGrids = true, //show grids
-    this.gridsColor = const Color(0xff4b4b4b), //grid color
-    this.gridsMaxTile = 10, // grid max tile 
-    this.gridsTileSize = 1.0, // grid tile size
+    this.panDistanceToActivate,
+    this.onZoomChangeListener,
+    this.onRotationChangeListener,
+    this.color = Colors.black,
+    this.centerPivot = false,
+    this.showGrids = true,
+    this.gridsColor = const Color(0xff4b4b4b),
+    this.gridsMaxTile = 10,
+    this.gridsTileSize = 1.0,
+    this.rasterizerMethod = RasterizerMethod.NewMethod,
+    this.lightColor = Colors.white,
   });
 ```  
+
 ## Limits            
 
 **Please use this library with TRIANGLES in the obj file itself.**
