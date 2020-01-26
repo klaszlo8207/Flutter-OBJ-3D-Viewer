@@ -39,20 +39,13 @@ drawTexturedTriangleVertices(Canvas canvas, Math.Vector3 v1, Math.Vector3 v2, Ma
   double nl2 = _calculateNormal(n2, lightPosition);
   double nl3 = _calculateNormal(n3, lightPosition);
 
-  final shade1 = Color.lerp(color, lightColor, nl1); //color.withOpacity(nl1) + lightColor.withOpacity(1- nl1);
-  final shade2 = Color.lerp(color, lightColor, nl2); //color.withOpacity(nl2) + lightColor.withOpacity(1- nl2);
-  final shade3 = Color.lerp(color, lightColor, nl3); //color.withOpacity(nl3) + lightColor.withOpacity(1- nl2);
+  final shade1 = Color.lerp(color, lightColor, nl1);
+  final shade2 = Color.lerp(color, lightColor, nl2);
+  final shade3 = Color.lerp(color, lightColor, nl3);
 
   final List<Color> colors = [shade1, shade2, shade3];
   final Vertices _vertices = Vertices(vertexMode, vertices, textureCoordinates: textureCoordinates, colors: colors);
   canvas.drawVertices(_vertices, BlendMode.colorBurn, paintRasterizer);
-
-  /*
-  final shade = Colors.black.withOpacity(brightness);
-  final List<Color> colors = [shade, shade, shade];
-  final Vertices _vertices = Vertices(vertexMode, vertices, textureCoordinates: textureCoordinates, colors: colors);
-  canvas.drawVertices(_vertices, BlendMode.colorBurn, paintRasterizer);
-  */
 }
 
 _calculateNormal(Math.Vector3 n, Math.Vector3 lightPosition) {

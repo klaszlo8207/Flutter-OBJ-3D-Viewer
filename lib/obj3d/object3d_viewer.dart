@@ -257,11 +257,6 @@ class Object3DViewerState extends State<Object3DViewer> {
 
   @override
   Widget build(BuildContext context) {
-    /*
-    Future.delayed(Duration(milliseconds: widget.refreshMilliseconds), () {
-      if (object3DRenderer != null) object3DRenderer.refresh();
-    });*/
-
     if (isLoading) {
       return Center(child: CircularProgressIndicator(backgroundColor: Colors.black));
     } else {
@@ -446,7 +441,7 @@ class Object3DRenderer extends ChangeNotifier implements CustomPainter {
 
     if (model.vertices.length > MAX_SUPPORTED_VERTICES) {
       final sHead = "${widget.objPath}";
-      final sDesc = "Too much vertices: ${model.vertices.length}! Max supported vertices: $MAX_SUPPORTED_VERTICES";
+      final sDesc = "Too much points: ${model.vertices.length}! Max supported points: $MAX_SUPPORTED_VERTICES";
       drawErrorText(canvas, sHead, sDesc);
 
       return;
@@ -535,7 +530,6 @@ class Object3DRenderer extends ChangeNotifier implements CustomPainter {
       });
     }
     sortedItems.sort((Map a, Map b) => a["order"].compareTo(b["order"]));
-    //
 
     for (int i = 0; i < sortedItems.length; i++) {
       final sorted = sortedItems[i];
