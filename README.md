@@ -46,6 +46,11 @@ An OBJ 3D Viewer and Parser for flutter/dart. Also a simple Rasterizer.
    showWireframe: _showWireframe,
    wireframeColor: Colors.red,
    panDistanceToActivate: 40,
+   centerPivot: false,
+   showGrids: true,
+   gridsColor: const Color(0xff4b4b4b),
+   gridsMaxTile: 10,
+   gridsTileSize: 1.0,
 ),
 ```
 
@@ -76,6 +81,11 @@ https://github.com/klaszlo8207/Flutter-OBJ-3D-Viewer/blob/master/lib/main.dart
     this.onZoomChangeListener, //zoom listener
     this.onRotationChangeListener, //rotation listener
     this.color,
+    this.centerPivot = false, //center the pivot/rotation point
+    this.showGrids = true, //show grids
+    this.gridsColor = const Color(0xff4b4b4b), //grid color
+    this.gridsMaxTile = 10, // grid max tile 
+    this.gridsTileSize = 1.0, // grid tile size
   });
 ```  
 ## Limits            
