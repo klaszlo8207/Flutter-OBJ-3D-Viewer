@@ -71,15 +71,6 @@ List<Object3DDetails> _objects = [
     gridTileSize: 10.0,
   ),
   Object3DDetails(
-    "assets/shuttle.obj",
-    "assets/shuttle.png",
-    Math.Vector3(322, 10, 42),
-    20,
-    color: Colors.black.withOpacity(0.7),
-    lightColor: Colors.white.withOpacity(0.3),
-    gridTileSize: 2.0,
-  ),
-  Object3DDetails(
     "assets/dog.obj",
     "assets/dog.jpg",
     Math.Vector3(34, 10, 0),

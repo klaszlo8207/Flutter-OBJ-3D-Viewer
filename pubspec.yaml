@@ -52,7 +52,5 @@ flutter:
     - assets/cat2.obj
     - assets/cat.jpg
     - assets/cat.obj
-    - assets/shuttle.obj
-    - assets/shuttle.png
     - assets/hubble.obj
     - assets/hubble.png
