@@ -27,9 +27,7 @@ class MyApp extends StatelessWidget {
         builder: (context, cv, _) {
           return MaterialApp(
             title: 'Flutter 3d obj Parser/Viewer Demo',
-            theme: ThemeData(
-              primarySwatch: Colors.blue,
-            ),
+            theme: ThemeData(primarySwatch: Colors.blue),
             home: MyHomePage(),
           );
         },
@@ -51,15 +49,7 @@ class Object3DDetails {
   Color color, lightColor;
   double gridTileSize;
 
-  Object3DDetails(
-    this.objPath,
-    this.objTexturePath,
-    this.rotation,
-    this.zoom, {
-    this.color = Colors.black,
-    this.lightColor = Colors.white,
-    this.gridTileSize = 0.5,
-  });
+  Object3DDetails(this.objPath, this.objTexturePath, this.rotation, this.zoom, {this.color = Colors.black, this.lightColor = Colors.white, this.gridTileSize = 0.5});
 }
 
 List<Object3DDetails> _objects = [
@@ -72,19 +62,30 @@ List<Object3DDetails> _objects = [
     lightColor: Colors.white.withOpacity(0.3),
   ),
   Object3DDetails(
+    "assets/hubble.obj",
+    "assets/hubble.png",
+    Math.Vector3(282, 10, 135),
+    3.5,
+    color: Colors.black.withOpacity(0.7),
+    lightColor: Colors.white.withOpacity(0.3),
+    gridTileSize: 10.0,
+  ),
+  Object3DDetails(
+    "assets/shuttle.obj",
+    "assets/shuttle.png",
+    Math.Vector3(322, 10, 42),
+    20,
+    color: Colors.black.withOpacity(0.7),
+    lightColor: Colors.white.withOpacity(0.3),
+    gridTileSize: 2.0,
+  ),
+  Object3DDetails(
     "assets/dog.obj",
     "assets/dog.jpg",
     Math.Vector3(34, 10, 0),
     40,
     color: Colors.black.withOpacity(0.8),
     lightColor: Colors.white.withOpacity(0.2),
-  ),
-  Object3DDetails(
-    "assets/wolf.obj",
-    "assets/wolf.jpg",
-    Math.Vector3(80, 10, 0),
-    80,
-    color: Colors.blue.withOpacity(0.5),
   ),
   Object3DDetails(
     "assets/fish.obj",
@@ -117,7 +118,7 @@ class ChangeVariants with ChangeNotifier {
   int _drawModeIndex = 0;
   bool _showWireframe = false;
   bool _useNewAlgorithm = true;
-  int _objIndex = 5;
+  int _objIndex = 0;
   double _lightAngle = 0.0;
   Math.Vector3 _lightPosition = Math.Vector3(20.0, 20.0, 10.0);
 

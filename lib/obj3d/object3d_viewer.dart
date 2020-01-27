@@ -342,7 +342,8 @@ class Object3DRenderer extends ChangeNotifier implements CustomPainter {
     _clearDepthBuffer();
   }
 
-  _drawTriangle(Canvas canvas, Math.Vector3 v1, Math.Vector3 v2, Math.Vector3 v3, Math.Vector2 uv1, Math.Vector2 uv2, Math.Vector2 uv3, Math.Vector3 n1, Math.Vector3 n2, Math.Vector3 n3) {
+  _drawTriangle(
+      Canvas canvas, Math.Vector3 v1, Math.Vector3 v2, Math.Vector3 v3, Math.Vector2 uv1, Math.Vector2 uv2, Math.Vector2 uv3, Math.Vector3 n1, Math.Vector3 n2, Math.Vector3 n3) {
     final path = Path();
     path.moveTo(v1.x, v1.y);
     path.lineTo(v2.x, v2.y);
@@ -368,11 +369,9 @@ class Object3DRenderer extends ChangeNotifier implements CustomPainter {
       canvas.drawPath(path, paintFill);
     } else if (widget.drawMode == DrawMode.TEXTURED) {
       if (widget.rasterizerMethod == RasterizerMethod.OldMethod)
-        drawTexturedTrianglePoints(canvas, depthBuffer, v1, v2, v3, uv1, uv2, uv3, n1, n2, n3, color, brightness,
-            widget.currentState().textureData, lightPosition);
+        drawTexturedTrianglePoints(canvas, depthBuffer, v1, v2, v3, uv1, uv2, uv3, n1, n2, n3, color, brightness, widget.currentState().textureData, lightPosition);
       else if (widget.rasterizerMethod == RasterizerMethod.NewMethod)
-        drawTexturedTriangleVertices(canvas, v1, v2, v3, uv1, uv2, uv3, n1, n2, n3, color,
-            widget.currentState().textureData, lightPosition, lightColor);
+        drawTexturedTriangleVertices(canvas, v1, v2, v3, uv1, uv2, uv3, n1, n2, n3, color, widget.currentState().textureData, lightPosition, lightColor);
     }
 
     if (widget.showWireframe ?? false == true) {
@@ -552,17 +551,22 @@ class Object3DRenderer extends ChangeNotifier implements CustomPainter {
   _drawInfo(Canvas canvas, int verticesCount) {
     if (widget.showInfo) {
       final rot = widget.currentState().rotation;
+      final zoom = widget.currentState().zoom.toStringAsFixed(1);
 
       drawText(canvas, "verts: " + verticesCount.toString(), Offset(20, ScreenUtils.height - 130), fontSize: 14);
 
-      drawText(
-          canvas,
-          "zoom: " + widget.currentState().zoom.toStringAsFixed(1) + " rot: (" + rot.x.toStringAsFixed(0) + ", " + rot.y.toStringAsFixed(0) + ", " + rot.z.toStringAsFixed(0) + ")",
+      drawText(canvas, "zoom: " + zoom + " rot: (" + rot.x.toStringAsFixed(0) + ", " + rot.y.toStringAsFixed(0) + ", " + rot.z.toStringAsFixed(0) + ")",
           Offset(20, ScreenUtils.height - 110),
           fontSize: 14);
 
       drawText(canvas, "path: " + widget.objPath, Offset(20, ScreenUtils.height - 160), fontSize: 12);
     }
+  }
+
+  refresh() => notifyListeners();
+
+  reset() {
+    if (widget.object3DViewerController != null) widget.object3DViewerController.reset();
   }
 
   @override
@@ -577,9 +581,4 @@ class Object3DRenderer extends ChangeNotifier implements CustomPainter {
   @override
   get semanticsBuilder => null;
 
-  refresh() => notifyListeners();
-
-  reset() {
-    if (widget.object3DViewerController != null) widget.object3DViewerController.reset();
-  }
 }
