@@ -1,4 +1,4 @@
-# Flutter obj 3d Viewer
+# Flutter OBJ 3D Viewer
 
 An OBJ 3D Viewer and Parser for flutter/dart. Also a simple Rasterizer. TEXTURED! LIGHTS!
 
